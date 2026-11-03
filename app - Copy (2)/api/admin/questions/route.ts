@@ -1,0 +1,8 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { requireAdmin } from "@/lib/auth";
+import { db } from "@/lib/db";
+
+const schema=z.object({quizId:z.string().min(1),prompt:z.string().trim().min(5).max(500),options:z.array(z.string().trim().min(1).max(200)).min(2).max(8),correctAnswer:z.number().int().min(0).max(7),explanation:z.string().trim().min(5).max(1000)}).refine(data=>data.correctAnswer<data.options.length);
+export async function GET(request:Request){if(!await requireAdmin())return NextResponse.json({error:"Admin access required."},{status:403});const quizId=new URL(request.url).searchParams.get("quizId");if(!quizId)return NextResponse.json({error:"quizId is required."},{status:400});return NextResponse.json({questions:await db.question.findMany({where:{quizId},select:{id:true,prompt:true,options:true,correctAnswer:true,explanation:true}})});}
+export async function POST(request:Request){if(!await requireAdmin())return NextResponse.json({error:"Admin access required."},{status:403});let body:unknown;try{body=await request.json();}catch{return NextResponse.json({error:"Invalid data format."},{status:400});}const parsed=schema.safeParse(body);if(!parsed.success)return NextResponse.json({error:"Check the question, options, answer, and explanation."},{status:400});const quiz=await db.quiz.findUnique({where:{id:parsed.data.quizId},select:{id:true}});if(!quiz)return NextResponse.json({error:"Quiz not found."},{status:404});const question=await db.question.create({data:{...parsed.data,options:JSON.stringify(parsed.data.options)}});return NextResponse.json({question},{status:201});}

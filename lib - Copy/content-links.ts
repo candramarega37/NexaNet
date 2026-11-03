@@ -1,0 +1,4 @@
+const ignored=new Set(["yang","dan","untuk","dari","pada","dengan","dalam","atau","oleh","dasar","materi","video","jaringan","komputer","belajar","konsep","mengenai","model","fungsi"]);
+type Candidate={title:string;description:string;href:string;type:string;id?:string};
+function terms(value:string){return [...new Set(value.toLocaleLowerCase("id-ID").normalize("NFKD").replace(/[^\p{L}\p{N}]+/gu," ").split(/\s+/).filter(word=>word.length>=3&&!ignored.has(word)))];}
+export function findRelatedContent(source:string,candidates:Candidate[],limit=3){const keywords=terms(source);return candidates.map(item=>{const title=terms(item.title);const description=terms(item.description);const score=keywords.reduce((total,word)=>total+(title.includes(word)?3:description.includes(word)?1:0),0);return {item,score};}).filter(result=>result.score>0).sort((a,b)=>b.score-a.score||a.item.title.localeCompare(b.item.title,"id")).slice(0,limit).map(result=>result.item);}

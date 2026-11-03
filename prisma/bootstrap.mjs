@@ -23,7 +23,7 @@ database.exec(`CREATE TABLE IF NOT EXISTS "_prisma_migrations" (
   "applied_steps_count" INTEGER NOT NULL DEFAULT 0
 );`);
 
-const migrationsDir = resolve(projectRoot, "prisma", "migrations");
+const migrationsDir = resolve(projectRoot, "prisma", "migrations_sqlite");
 const directories = readdirSync(migrationsDir, { withFileTypes: true }).filter(entry => entry.isDirectory()).map(entry => entry.name).sort();
 for (const name of directories) {
   const path = resolve(migrationsDir, name, "migration.sql");

@@ -1,0 +1,7 @@
+import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { threeDModelSchema } from "@/lib/three-d-validation";
+
+export async function GET(){if(!await requireAdmin())return NextResponse.json({error:"Admin access required."},{status:403});const objects=await db.threeDModel.findMany({include:{hotspots:{orderBy:{sortOrder:"asc"}}},orderBy:{updatedAt:"desc"}});return NextResponse.json({objects:objects.map(item=>({...item,components:JSON.parse(item.components)}))});}
+export async function POST(request:Request){if(!await requireAdmin())return NextResponse.json({error:"Admin access required."},{status:403});let body:unknown;try{body=await request.json();}catch{return NextResponse.json({error:"Invalid data format."},{status:400});}const parsed=threeDModelSchema.safeParse(body);if(!parsed.success)return NextResponse.json({error:"Check the model slug, description, components, and hotspots."},{status:400});const {components,hotspots,...item}=parsed.data;try{const object=await db.threeDModel.create({data:{...item,modelUrl:item.modelUrl||null,thumbnailUrl:item.thumbnailUrl||null,components:JSON.stringify(components),hotspots:{create:hotspots.map((hotspot,sortOrder)=>({...hotspot,sortOrder}))}},include:{hotspots:{orderBy:{sortOrder:"asc"}}}});return NextResponse.json({object:{...object,components}}, {status:201});}catch{return NextResponse.json({error:"Model slug is already in use."},{status:409});}}

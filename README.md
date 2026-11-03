@@ -8,7 +8,7 @@
 - Database-backed TKJ materials, video catalog, and quiz catalog.
 - Server-side dashboard statistics and material progress.
 - Credentials login with server-signed HTTP-only session cookies; database roles are checked on the server.
-- Student registration and password recovery with one-time, 30-minute tokens; login, registration, and recovery endpoints use persistent SQLite rate limits.
+- Student registration and password recovery with one-time, 30-minute tokens; login, registration, and recovery endpoints use database-backed rate limits.
 - Global search across published materials, videos, quizzes, troubleshooting cases, and 3D models.
 - Profile stores class and study program, and admin analytics includes six-month quiz/completion trends plus weak quiz topics.
 - Admin-protected create, publish/unpublish, and delete actions for learning materials.
@@ -27,7 +27,7 @@ The app includes local GLB assets for network devices and a lazy-loaded 3D viewe
 
 - Next.js 16.3.6 App Router, React 19.2.8, TypeScript 5
 - Tailwind CSS 4 plus CSS design tokens
-- Prisma 6.19, SQLite, Zod 4, bcryptjs, jose
+- Prisma 6.19, Neon PostgreSQL, Zod 4, bcryptjs, jose
 - No API secrets are included in source files.
 
 ## Architecture and folder structure
@@ -48,13 +48,14 @@ app/
 components/                      Login, quiz, progress, admin, and lab UI
 lib/                              Prisma client, auth/session, validation, AI, network logic
 prisma/schema.prisma              Relational data model
-prisma/migrations/                Versioned SQLite migration SQL
+prisma/migrations/                Versioned PostgreSQL migration SQL
+prisma/migrations_sqlite/         Legacy local SQLite migration SQL
 prisma/seed.mjs                   Development demo accounts and TKJ content
 ```
 
 ## Installation and environment
 
-Use Node.js 22.5 or newer for the local SQLite migration bootstrap, then:
+Use Node.js 22.5 or newer, then:
 
 ```bash
 npm install
@@ -72,7 +73,7 @@ npm run db:seed
 npm run models:build
 ```
 
-`db:migrate` applies checked-in migration SQL to the configured local SQLite file and records it in Prisma migration history. For a Prisma engine deployment pipeline, use `npm run db:deploy` after configuring `DATABASE_URL` and the appropriate migration provider. SQLite migrations are provider-specific; generate and review provider-specific migrations when moving to PostgreSQL.
+`DATABASE_URL` is the Neon pooled connection string used by the app. `DIRECT_URL` is the non-pooled Neon connection string used by Prisma migrations. Both should select the `nexanet_app` schema so the app's tables stay separate from any existing Neon tables. `npm run db:migrate` applies the checked-in PostgreSQL migrations; use `npm run db:migrate:dev` when creating migrations during development. The old SQLite migrations remain under `prisma/migrations_sqlite` and can be applied locally with `npm run db:migrate:sqlite` after setting `DATABASE_URL` to a SQLite file URL.
 
 The schema models users and student profile fields, one-time password reset tokens, rate-limit buckets, materials, progress, videos, troubleshooting cases, 3D models and hotspots, quizzes, questions, quiz attempts, and recent activity. Network Lab runs use the activity relation. Relations use scalar IDs, uniqueness constraints, and indexes so the logical model can be carried to PostgreSQL.
 
@@ -114,7 +115,7 @@ Run `npm test` using Node's built-in test runner. Tests cover IPv4 validation, s
 
 ## Troubleshooting
 
-- If a database route reports a missing `DATABASE_URL`, copy `.env.example` to `.env` and check that the SQLite path is valid.
+- If a database route reports a missing `DATABASE_URL` or `DIRECT_URL`, copy `.env.example` to `.env` and set both Neon connection strings.
 - If generated Prisma types are stale, run `npm run db:generate`.
 - If demo content is missing, run `npm run db:seed` after migrating.
 - If the development server uses another port, open the URL printed by Next.js.

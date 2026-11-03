@@ -1,0 +1,8 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { requireAdmin } from "@/lib/auth";
+import { db } from "@/lib/db";
+
+const schema = z.object({ slug: z.string().trim().min(3).max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), title: z.string().trim().min(3).max(120), description: z.string().trim().min(10).max(400), symptoms: z.array(z.string().trim().min(2).max(180)).min(1).max(8), steps: z.array(z.object({ prompt: z.string().trim().min(5).max(250), yes: z.string().trim().min(3).max(400), no: z.string().trim().min(3).max(400) })).min(1).max(10), published: z.boolean().default(false) });
+export async function GET() { if (!await requireAdmin()) return NextResponse.json({ error: "Admin access required." }, { status: 403 }); const items = await db.troubleshootingCase.findMany({ orderBy: { updatedAt: "desc" } }); return NextResponse.json({ cases: items.map(item => ({ ...item, symptoms: JSON.parse(item.symptoms), steps: JSON.parse(item.steps) })) }); }
+export async function POST(request: Request) { if (!await requireAdmin()) return NextResponse.json({ error: "Admin access required." }, { status: 403 }); let body: unknown; try { body = await request.json(); } catch { return NextResponse.json({ error: "Invalid data format." }, { status: 400 }); } const parsed = schema.safeParse(body); if (!parsed.success) return NextResponse.json({ error: "Check the slug, symptoms, and diagnostic steps." }, { status: 400 }); const item = await db.troubleshootingCase.create({ data: { ...parsed.data, symptoms: JSON.stringify(parsed.data.symptoms), steps: JSON.stringify(parsed.data.steps) } }); return NextResponse.json({ case: item }, { status: 201 }); }
