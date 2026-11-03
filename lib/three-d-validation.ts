@@ -1,0 +1,4 @@
+import { z } from "zod";
+
+const assetUrl=z.string().trim().max(500).refine(value=>value===""||value.startsWith("/models/")||value.startsWith("/images/")||/^https:\/\//i.test(value));
+export const threeDModelSchema=z.object({slug:z.string().trim().min(2).max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),title:z.string().trim().min(2).max(100),description:z.string().trim().min(10).max(400),purpose:z.string().trim().min(10).max(500),components:z.array(z.string().trim().min(2).max(100)).min(1).max(12),hotspots:z.array(z.object({title:z.string().trim().min(2).max(80),description:z.string().trim().min(5).max(300),example:z.string().trim().min(2).max(250),x:z.number().min(-10).max(10),y:z.number().min(-10).max(10),z:z.number().min(-10).max(10)})).max(12).default([]),modelUrl:assetUrl.optional(),thumbnailUrl:assetUrl.optional(),published:z.boolean().default(false)});
