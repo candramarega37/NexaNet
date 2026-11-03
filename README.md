@@ -59,10 +59,9 @@ Use Node.js 22.5 or newer, then:
 
 ```bash
 npm install
-Copy-Item .env.example .env
 ```
 
-Replace `AUTH_SECRET` in `.env` with a random secret of at least 32 characters. `.env` files are ignored by git. Do not use the demo passwords in a deployed environment.
+Create a local `.env` with the pooled `DATABASE_URL` and direct `DIRECT_URL` from Neon, plus a random `AUTH_SECRET` of at least 32 characters. `.env` files are ignored by git. Do not use the demo passwords in a deployed environment.
 
 ## Database setup, migration, and seed
 
@@ -115,7 +114,7 @@ Run `npm test` using Node's built-in test runner. Tests cover IPv4 validation, s
 
 ## Troubleshooting
 
-- If a database route reports a missing `DATABASE_URL` or `DIRECT_URL`, copy `.env.example` to `.env` and set both Neon connection strings.
+- If a database route reports a missing `DATABASE_URL` or `DIRECT_URL`, set both Neon connection strings in your local `.env`.
 - If generated Prisma types are stale, run `npm run db:generate`.
 - If demo content is missing, run `npm run db:seed` after migrating.
 - If the development server uses another port, open the URL printed by Next.js.
