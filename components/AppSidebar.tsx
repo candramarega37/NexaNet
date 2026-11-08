@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/components/LanguageProvider";
+
+const scrollStorageKey = "nexanet-sidebar-scroll-position";
 
 export default function AppSidebar({ role, section }: { role: string; section: string }) {
   const [open, setOpen] = useState(false);
@@ -23,6 +25,19 @@ export default function AppSidebar({ role, section }: { role: string; section: s
   ];
   const adminGroup: NavGroup = [t("nav.admin"), [[t("admin.dashboard"), "/admin"], [t("admin.materials"), "/admin/materials"], [t("admin.videos"), "/admin/videos"], [t("admin.quizzes"), "/admin/quizzes"], [t("admin.questions"), "/admin/questions"], [t("admin.troubleshooting"), "/admin/troubleshooting"], [t("admin.threeDModels"), "/admin/3d-models"], [t("admin.students"), "/admin/students"], [t("admin.analytics"), "/admin/analytics"]]];
   const groups = (role === "ADMIN" || role === "TEACHER") ? [...studentGroups, adminGroup] : studentGroups;
+
+  useLayoutEffect(() => {
+    const saved = sessionStorage.getItem(scrollStorageKey);
+    if (!saved) return;
+    try {
+      const position = JSON.parse(saved) as { href: string; top: number };
+      if (position.href === pathname && sidebarRef.current) sidebarRef.current.scrollTop = position.top;
+    } catch {
+      // Ignore stale or malformed session storage values.
+    } finally {
+      sessionStorage.removeItem(scrollStorageKey);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     if (!open) return;
@@ -71,11 +86,18 @@ export default function AppSidebar({ role, section }: { role: string; section: s
     return false;
   }
 
+  function handleNavigation(href: string) {
+    if (href !== pathname && sidebarRef.current) {
+      sessionStorage.setItem(scrollStorageKey, JSON.stringify({ href, top: sidebarRef.current.scrollTop }));
+    }
+    setOpen(false);
+  }
+
   return <>
     <button ref={toggleRef} className="sidebar-toggle" aria-label={open ? t("sidebar.toggleClose") : t("sidebar.toggleOpen")} aria-expanded={open} aria-controls="app-sidebar" onClick={() => setOpen(value => !value)}>{open ? "×" : "☰"}</button>
     {open && <button className="sidebar-backdrop" aria-label={t("sidebar.toggleClose")} onClick={() => setOpen(false)}/>}
     <aside ref={sidebarRef} id="app-sidebar" className={`app-sidebar${open ? " open" : ""}`} aria-label={t("sidebar.studyRoom")} role={open ? "dialog" : undefined} aria-modal={open || undefined} tabIndex={open ? -1 : undefined}><div className="sidebar-caption"><span>{t("sidebar.studyRoom")}</span><button className="sidebar-close" aria-label={t("sidebar.toggleClose")} onClick={() => setOpen(false)}>×</button></div>
-      {groups.map(([heading, links]) => <section className="sidebar-group" key={heading}><h2>{heading}</h2>{links.map(([label, href]) => <Link key={href} href={href} scroll={false} aria-current={isActive(href) ? "page" : undefined} onClick={() => setOpen(false)}>{label}</Link>)}</section>)}
+      {groups.map(([heading, links]) => <section className="sidebar-group" key={heading}><h2>{heading}</h2>{links.map(([label, href]) => <Link key={href} href={href} scroll={false} aria-current={isActive(href) ? "page" : undefined} onClick={() => handleNavigation(href)}>{label}</Link>)}</section>)}
     </aside>
   </>;
 }
