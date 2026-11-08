@@ -19,7 +19,10 @@ export async function POST(request: Request) {
     user = await db.user.findUnique({ where: { email: parsed.data.email.toLowerCase() } });
   } catch (error) {
     const code = error && typeof error === "object" && "code" in error ? error.code : undefined;
-    console.error("[auth/login] database request failed", { code });
+    const meta = error && typeof error === "object" && "meta" in error ? error.meta : undefined;
+    const dbCode = meta && typeof meta === "object" && "code" in meta ? meta.code : undefined;
+    const dbMessage = meta && typeof meta === "object" && "message" in meta ? meta.message : undefined;
+    console.error("[auth/login] database request failed", { code, dbCode, dbMessage });
     return NextResponse.json({ error: "Login service is temporarily unavailable." }, { status: 503 });
   }
   if (!user || !(await compare(parsed.data.password, user.passwordHash))) return NextResponse.json({ error: "Email or password is incorrect." }, { status: 401 });
