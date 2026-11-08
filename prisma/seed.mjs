@@ -73,17 +73,21 @@ const extraQuizzes = [
 ];
 
 async function main() {
-  const adminEmail = process.env.DEMO_ADMIN_EMAIL ?? "admin@nexanet.local";
-  const studentEmail = process.env.DEMO_STUDENT_EMAIL ?? "siswa@nexanet.local";
-  const adminPassword = process.env.DEMO_ADMIN_PASSWORD ?? "AdminDemo!2026";
-  const studentPassword = process.env.DEMO_STUDENT_PASSWORD ?? "BelajarDemo!2026";
-  const teacherEmail = process.env.DEMO_TEACHER_EMAIL ?? "guru@nexanet.local";
-  const teacherPassword = process.env.DEMO_TEACHER_PASSWORD ?? "GuruDemo!2026";
-  await db.user.upsert({ where: { email: adminEmail }, update: {}, create: { name: "Demo Admin", email: adminEmail, passwordHash: await bcrypt.hash(adminPassword, 12), role: "ADMIN" } });
-  await db.user.upsert({ where: { email: teacherEmail }, update: { className: "XI TKJ 1", major: "Computer and Network Engineering" }, create: { name: "Demo Teacher", email: teacherEmail, passwordHash: await bcrypt.hash(teacherPassword, 12), role: "TEACHER", className: "XI TKJ 1", major: "Computer and Network Engineering" } });
-  await db.user.upsert({ where: { email: studentEmail }, update: { className: "XI TKJ 1", major: "Computer and Network Engineering" }, create: { name: "Demo Student", email: studentEmail, passwordHash: await bcrypt.hash(studentPassword, 12), role: "STUDENT", className: "XI TKJ 1", major: "Computer and Network Engineering" } });
-  const sampleStudents = [2, 3].map(index => ({ email: process.env[`DEMO_STUDENT_${index}_EMAIL`] ?? `siswa${index}@nexanet.local`, password: process.env[`DEMO_STUDENT_${index}_PASSWORD`] ?? `BelajarSiswa${index}!2026`, name: `Demo Student ${index}` }));
-  for (const [index, student] of sampleStudents.entries()) await db.user.upsert({ where: { email: student.email }, update: { className: index === 0 ? "XI TKJ 2" : "X TKJ 1", major: "Computer and Network Engineering" }, create: { name: student.name, email: student.email, passwordHash: await bcrypt.hash(student.password, 12), role: "STUDENT", className: index === 0 ? "XI TKJ 2" : "X TKJ 1", major: "Computer and Network Engineering" } });
+  const contentOnly = process.argv.includes("--content-only");
+  let sampleStudents = [];
+  if (!contentOnly) {
+    const adminEmail = process.env.DEMO_ADMIN_EMAIL ?? "admin@nexanet.local";
+    const studentEmail = process.env.DEMO_STUDENT_EMAIL ?? "siswa@nexanet.local";
+    const adminPassword = process.env.DEMO_ADMIN_PASSWORD ?? "AdminDemo!2026";
+    const studentPassword = process.env.DEMO_STUDENT_PASSWORD ?? "BelajarDemo!2026";
+    const teacherEmail = process.env.DEMO_TEACHER_EMAIL ?? "guru@nexanet.local";
+    const teacherPassword = process.env.DEMO_TEACHER_PASSWORD ?? "GuruDemo!2026";
+    await db.user.upsert({ where: { email: adminEmail }, update: {}, create: { name: "Demo Admin", email: adminEmail, passwordHash: await bcrypt.hash(adminPassword, 12), role: "ADMIN" } });
+    await db.user.upsert({ where: { email: teacherEmail }, update: { className: "XI TKJ 1", major: "Computer and Network Engineering" }, create: { name: "Demo Teacher", email: teacherEmail, passwordHash: await bcrypt.hash(teacherPassword, 12), role: "TEACHER", className: "XI TKJ 1", major: "Computer and Network Engineering" } });
+    await db.user.upsert({ where: { email: studentEmail }, update: { className: "XI TKJ 1", major: "Computer and Network Engineering" }, create: { name: "Demo Student", email: studentEmail, passwordHash: await bcrypt.hash(studentPassword, 12), role: "STUDENT", className: "XI TKJ 1", major: "Computer and Network Engineering" } });
+    sampleStudents = [2, 3].map(index => ({ email: process.env[`DEMO_STUDENT_${index}_EMAIL`] ?? `siswa${index}@nexanet.local`, password: process.env[`DEMO_STUDENT_${index}_PASSWORD`] ?? `BelajarSiswa${index}!2026`, name: `Demo Student ${index}` }));
+    for (const [index, student] of sampleStudents.entries()) await db.user.upsert({ where: { email: student.email }, update: { className: index === 0 ? "XI TKJ 2" : "X TKJ 1", major: "Computer and Network Engineering" }, create: { name: student.name, email: student.email, passwordHash: await bcrypt.hash(student.password, 12), role: "STUDENT", className: index === 0 ? "XI TKJ 2" : "X TKJ 1", major: "Computer and Network Engineering" } });
+  }
   for (const material of materials) {
     await db.material.upsert({ where: { slug: material.slug }, update: material, create: material });
   }
@@ -128,7 +132,7 @@ async function main() {
     { quizId: quiz.id, prompt: "What are the rules for communication between network devices called?", options: JSON.stringify(["Protocol", "Topology", "Connector", "Graphical interface"]), correctAnswer: 0, explanation: "Protocols define the rules for data exchange." },
   ].slice(0, 5 - basicCount) });
   const sampleMaterial = await db.material.findUnique({ where: { slug: "dasar-jaringan-komputer" } });
-  if (sampleMaterial) {
+  if (!contentOnly && sampleMaterial) {
     const sampleUsers = await db.user.findMany({ where: { email: { in: sampleStudents.map(student => student.email) } }, select: { id: true } });
     for (const [index, sampleUser] of sampleUsers.entries()) {
       await db.materialProgress.upsert({ where: { userId_materialId: { userId: sampleUser.id, materialId: sampleMaterial.id } }, update: {}, create: { userId: sampleUser.id, materialId: sampleMaterial.id, status: index === 0 ? "IN_PROGRESS" : "COMPLETED", percent: index === 0 ? 45 : 100, completedAt: index === 0 ? null : new Date() } });

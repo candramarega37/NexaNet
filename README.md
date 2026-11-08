@@ -63,6 +63,10 @@ npm install
 
 Create a local `.env` with the pooled `DATABASE_URL` and direct `DIRECT_URL` from Neon, plus a random `AUTH_SECRET` of at least 32 characters. `.env` files are ignored by git. Do not use the demo passwords in a deployed environment.
 
+Copy `.env.example` as a starting point. In Vercel, add `DATABASE_URL`, `DIRECT_URL`, and `AUTH_SECRET` to the Production environment. Use the pooled Neon URL (`-pooler`) for `DATABASE_URL` and the direct Neon URL for `DIRECT_URL`; both URLs must include `sslmode=require&schema=nexanet_app`. Use a separate Neon branch and separate values for Preview deployments so preview migrations never target production. `AUTH_SECRET` must be a unique random value of at least 32 characters. The `vercel-build` script generates Prisma Client, applies pending PostgreSQL migrations, and builds Next.js.
+
+Neon Object Storage credentials can be set as `AWS_ENDPOINT_URL_S3`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION`; keep them only in ignored `.env` locally and Vercel's server-side environment variables. Provision the bucket in Neon and use a server-side S3 client with path-style requests when adding upload functionality.
+
 ## Database setup, migration, and seed
 
 ```bash
@@ -73,6 +77,8 @@ npm run models:build
 ```
 
 `DATABASE_URL` is the Neon pooled connection string used by the app. `DIRECT_URL` is the non-pooled Neon connection string used by Prisma migrations. Both should select the `nexanet_app` schema so the app's tables stay separate from any existing Neon tables. `npm run db:migrate` applies the checked-in PostgreSQL migrations; use `npm run db:migrate:dev` when creating migrations during development. The old SQLite migrations remain under `prisma/migrations_sqlite` and can be applied locally with `npm run db:migrate:sqlite` after setting `DATABASE_URL` to a SQLite file URL.
+
+To populate a new Neon branch with the bundled learning content without creating demo accounts or sample student activity, run `npm run db:seed:content`. The regular `npm run db:seed` command also creates local-only demo accounts and sample student records; do not run that command against production.
 
 The schema models users and student profile fields, one-time password reset tokens, rate-limit buckets, materials, progress, videos, troubleshooting cases, 3D models and hotspots, quizzes, questions, quiz attempts, and recent activity. Network Lab runs use the activity relation. Relations use scalar IDs, uniqueness constraints, and indexes so the logical model can be carried to PostgreSQL.
 

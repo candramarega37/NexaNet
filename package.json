@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "node --test",
@@ -15,6 +16,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:sync-materials": "node prisma/sync-materials.mjs",
     "db:seed": "node prisma/seed.mjs",
+    "db:seed:content": "node prisma/seed.mjs --content-only",
     "models:build": "node scripts/generate-network-models.mjs && node scripts/generate-access-point-model.mjs",
     "typecheck": "tsc --noEmit"
   },
