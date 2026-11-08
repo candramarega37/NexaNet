@@ -75,7 +75,7 @@ export default function AppSidebar({ role, section }: { role: string; section: s
     <button ref={toggleRef} className="sidebar-toggle" aria-label={open ? t("sidebar.toggleClose") : t("sidebar.toggleOpen")} aria-expanded={open} aria-controls="app-sidebar" onClick={() => setOpen(value => !value)}>{open ? "×" : "☰"}</button>
     {open && <button className="sidebar-backdrop" aria-label={t("sidebar.toggleClose")} onClick={() => setOpen(false)}/>}
     <aside ref={sidebarRef} id="app-sidebar" className={`app-sidebar${open ? " open" : ""}`} aria-label={t("sidebar.studyRoom")} role={open ? "dialog" : undefined} aria-modal={open || undefined} tabIndex={open ? -1 : undefined}><div className="sidebar-caption"><span>{t("sidebar.studyRoom")}</span><button className="sidebar-close" aria-label={t("sidebar.toggleClose")} onClick={() => setOpen(false)}>×</button></div>
-      {groups.map(([heading, links]) => <section className="sidebar-group" key={heading}><h2>{heading}</h2>{links.map(([label, href]) => <Link key={href} href={href} aria-current={isActive(href) ? "page" : undefined} onClick={() => setOpen(false)}>{label}</Link>)}</section>)}
+      {groups.map(([heading, links]) => <section className="sidebar-group" key={heading}><h2>{heading}</h2>{links.map(([label, href]) => <Link key={href} href={href} scroll={false} aria-current={isActive(href) ? "page" : undefined} onClick={() => setOpen(false)}>{label}</Link>)}</section>)}
     </aside>
   </>;
 }
