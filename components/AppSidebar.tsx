@@ -31,10 +31,11 @@ export default function AppSidebar({ role, section }: { role: string; section: s
     if (!saved) return;
     try {
       const position = JSON.parse(saved) as { href: string; top: number };
-      if (position.href === pathname && sidebarRef.current) sidebarRef.current.scrollTop = position.top;
+      if (position.href !== pathname || !sidebarRef.current) return;
+      sidebarRef.current.scrollTop = position.top;
+      sessionStorage.removeItem(scrollStorageKey);
     } catch {
       // Ignore stale or malformed session storage values.
-    } finally {
       sessionStorage.removeItem(scrollStorageKey);
     }
   }, [pathname]);
